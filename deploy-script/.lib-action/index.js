@@ -24961,16 +24961,19 @@ const Bunny = __importStar(__nccwpck_require__(8343));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // const githubToken = core.getInput('token', { required: true });
             const scriptId = core.getInput("script_id", { required: true });
             const deployKey = core.getInput("deploy_key", { required: false });
+            const apiKey = core.getInput("api_key", { required: false });
             const base = core.getInput("base", { required: false });
             let token;
-            if (deployKey == "") {
-                token = Bunny.newOIDCToken(yield core.getIDToken());
+            if (deployKey !== "") {
+                token = Bunny.newDeployKey(deployKey);
+            }
+            else if (apiKey !== "") {
+                token = Bunny.newApiKey(apiKey);
             }
             else {
-                token = Bunny.newDeployKey(deployKey);
+                token = Bunny.newOIDCToken(yield core.getIDToken());
             }
             const client = Bunny.createClient(base, token);
             const file_path = core.getInput("file", { required: true });
@@ -25002,11 +25005,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.newOIDCToken = exports.newDeployKey = exports.createClient = exports.deployScript = void 0;
+exports.newApiKey = exports.newOIDCToken = exports.newDeployKey = exports.createClient = exports.deployScript = void 0;
 const newDeployKey = (token) => ({ _internal: "deploy", token });
 exports.newDeployKey = newDeployKey;
 const newOIDCToken = (token) => ({ _internal: "oidc", token });
 exports.newOIDCToken = newOIDCToken;
+const newApiKey = (token) => ({ _internal: "api", token });
+exports.newApiKey = newApiKey;
 const createClient = (base, token) => { return ({ base, token }); };
 exports.createClient = createClient;
 const deployScript = (client) => (scriptId, code) => __awaiter(void 0, void 0, void 0, function* () {
@@ -25020,6 +25025,9 @@ const deployScript = (client) => (scriptId, code) => __awaiter(void 0, void 0, v
             break;
         case "oidc":
             headers["GithubToken"] = client.token.token;
+            break;
+        case "api":
+            headers["AccessKey"] = client.token.token;
             break;
     }
     const endpoint_save = `${client.base}/compute/script/${scriptId}/code`;
