@@ -2,18 +2,14 @@ name: Deploy Script to Bunny
 author: Bunny Devs
 description: Use this action to upload an EdgeScript to your Bunny Pullzone.
 
-permissions:
-  id-token: write
-  contents: read
-
 inputs:
-  token:
-    description: Github token.
-    required: true
-
   script_id:
     description: The ScriptID associated to your Pullzone.
     required: true
+
+  api_key:
+    description: The API key for Bunny.
+    required: false
 
   deploy_key:
     description: The associated DeployKey for Bunny.
@@ -26,12 +22,12 @@ inputs:
   base:
     description: The API endpoint - Only used for debug
     required: false
-    default: 'https://api.bunny.net'
+    default: "https://api.bunny.net"
 
 runs:
-  using: 'node20'
-  main: '.lib-action/index.js'
+  using: "node20"
+  main: ".lib-action/index.js"
 
 branding:
-  color: 'orange'
-  icon: 'upload-cloud'
+  color: "orange"
+  icon: "upload-cloud"
