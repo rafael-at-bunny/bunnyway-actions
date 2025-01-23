@@ -1,2 +1,3 @@
 packages:
   - 'deploy-script'
+  - 'container-update-image'
