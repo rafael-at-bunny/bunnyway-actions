@@ -15,7 +15,7 @@ an action.
 
 ## Actions
 
-Each action can be used in your workflow this way: 
+Each action can be used in your workflow this way:
 
 ```yaml
 steps:
@@ -25,15 +25,16 @@ steps:
 Each action will have its own documentation, you can check the associated documentation
 in each folder.
 
-It contains: 
+It contains:
 
-- [`BunnyWay/actions/deploy-script`](./deploy-script) 
+- [`BunnyWay/actions/deploy-script`](./deploy-script)
+- [`BunnyWay/actions/container-update-image`](./container-update-image)
 
 ## Development
 
 We are using [Javascript
 actions](https://help.github.com/en/articles/about-actions#types-of-actions)
-which need to be pushed. We handle the build of each actions with 
+which need to be pushed. We handle the build of each actions with
 [ncc](https://github.com/vercel/ncc).
 
 We handle versionning with [changeset](https://github.com/changesets/changesets), each time you do a change, you'll need

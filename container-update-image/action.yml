@@ -1,0 +1,31 @@
+name: Update container image
+author: Bunny Devs
+description: Use this action to update the image in a Container
+
+permissions:
+  contents: read
+
+inputs:
+  api_key:
+    description: The API key for your Bunny account
+    required: true
+
+  app_id:
+    description: The Container Application ID.
+    required: true
+
+  container:
+    description: The Container name.
+    required: true
+
+  image_tag:
+    description: The new image.
+    required: true
+
+runs:
+  using: 'node20'
+  main: '.lib-action/index.js'
+
+branding:
+  color: 'orange'
+  icon: 'upload-cloud'
