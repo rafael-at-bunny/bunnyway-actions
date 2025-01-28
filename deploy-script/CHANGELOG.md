@@ -1,5 +1,11 @@
 # deploy-script
 
+## 0.5.0
+
+### Minor Changes
+
+- c662f61: Allow updates with API keys
+
 ## 0.4.0
 
 ### Minor Changes
