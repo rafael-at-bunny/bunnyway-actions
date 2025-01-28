@@ -23,6 +23,8 @@ describe('action', () => {
       switch (input) {
         case 'script_id':
           return "12345";
+        case 'api_key':
+          return "api_token";
         case 'deploy_key':
           return "private_token";
         case 'base':
@@ -56,6 +58,7 @@ describe('action', () => {
     // Verify that inputs were fetched
     expect(core.getInput).toHaveBeenCalledWith('script_id', { required: true });
     expect(core.getInput).toHaveBeenCalledWith('deploy_key', { required: false });
+    expect(core.getInput).toHaveBeenCalledWith('api_key', { required: false });
     expect(core.getInput).toHaveBeenCalledWith('file', { required: true });
     expect(core.getInput).toHaveBeenCalledWith('base', { required: false });
 

@@ -1,6 +1,6 @@
 type BunnyClient = {
   base: string,
-  token: DeployKey | OIDCToken,
+  token: Token,
 };
 
 export type DeployKey = {
@@ -8,16 +8,21 @@ export type DeployKey = {
   token: string;
 }
 
-const newDeployKey = (token: string): DeployKey => ({ _internal: "deploy", token });
-
 export type OIDCToken = {
   _internal: "oidc",
   token: string;
 }
 
-export type Token = OIDCToken | DeployKey;
+export type ApiKey = {
+  _internal: "api",
+  token: string;
+}
 
+export type Token = OIDCToken | DeployKey | ApiKey;
+
+const newDeployKey = (token: string): DeployKey => ({ _internal: "deploy", token });
 const newOIDCToken = (token: string): OIDCToken => ({ _internal: "oidc", token });
+const newApiKey = (token: string): ApiKey => ({ _internal: "api", token });
 
 const createClient = (base: string, token: Token): BunnyClient => { return ({ base, token }) };
 
@@ -33,6 +38,9 @@ const deployScript = (client: BunnyClient) => async (scriptId: string, code: str
       break;
     case "oidc":
       headers["GithubToken"] = client.token.token;
+      break;
+    case "api":
+      headers["AccessKey"] = client.token.token;
       break;
   }
 
@@ -50,7 +58,6 @@ const deployScript = (client: BunnyClient) => async (scriptId: string, code: str
   }
 
   const endpoint_publish = `${client.base}/compute/script/${scriptId}/publish`;
-
   const responsePublish = await fetch(endpoint_publish, {
     method: "POST",
     headers,
@@ -71,4 +78,5 @@ export {
   createClient,
   newDeployKey,
   newOIDCToken,
+  newApiKey
 }
