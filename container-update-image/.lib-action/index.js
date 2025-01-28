@@ -24956,104 +24956,134 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__nccwpck_require__(6108));
-const fs = __importStar(__nccwpck_require__(3292));
-const Bunny = __importStar(__nccwpck_require__(8343));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        const apiKey = core.getInput("api_key", { required: true });
+        const appId = core.getInput("app_id", { required: true });
+        const container = core.getInput("container", { required: true });
+        const imageTag = core.getInput("image_tag", { required: true });
         try {
-            const scriptId = core.getInput("script_id", { required: true });
-            const deployKey = core.getInput("deploy_key", { required: false });
-            const apiKey = core.getInput("api_key", { required: false });
-            const base = core.getInput("base", { required: false });
-            let token;
-            if (deployKey !== "") {
-                token = Bunny.newDeployKey(deployKey);
+            const token = yield exchangeApiKeyForToken(apiKey);
+            const appConfig = yield getAppConfiguration(token, appId);
+            let replaced = false;
+            appConfig.containerTemplates.forEach((value, index) => {
+                if (value.name !== container) {
+                    return;
+                }
+                appConfig.containerTemplates[index].imageTag = imageTag;
+                replaced = true;
+            });
+            if (replaced === false) {
+                throw new Error(`Could not find container "${container}".`);
             }
-            else if (apiKey !== "") {
-                token = Bunny.newApiKey(apiKey);
+            yield saveAppConfiguration(token, appId, appConfig);
+        }
+        catch (e) {
+            if (typeof e === 'string' || e instanceof Error) {
+                core.setFailed(e);
             }
             else {
-                token = Bunny.newOIDCToken(yield core.getIDToken());
+                core.setFailed('Unexpected error');
             }
-            const client = Bunny.createClient(base, token);
-            const file_path = core.getInput("file", { required: true });
-            const fileContent = yield fs.readFile(file_path, { encoding: "utf-8" });
-            yield Bunny.deployScript(client)(scriptId, fileContent);
-        }
-        catch (error) {
-            console.error(error);
-            core.setFailed(error.message);
         }
     });
 }
-
-
-/***/ }),
-
-/***/ 8343:
-/***/ (function(__unused_webpack_module, exports) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
+function exchangeApiKeyForToken(apiKey) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            fetch('https://api.bunny.net/apikey/exchange', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'AccessKey': apiKey,
+                },
+                body: JSON.stringify({ AccessKey: apiKey }),
+            })
+                .then(response => {
+                if (response.status === 401) {
+                    reject('Invalid api_key.');
+                    return;
+                }
+                if (response.status !== 200) {
+                    reject(`Could not obtain access token: HTTP status ${response.status}.`);
+                    return;
+                }
+                response.json()
+                    .then(obj => {
+                    resolve(obj.Token);
+                })
+                    .catch(e => {
+                    console.log(e);
+                    reject('Could not parse JSON response.');
+                });
+            })
+                .catch(e => {
+                console.log(e);
+                reject('Could not obtain access token.');
+            });
+        });
     });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.newApiKey = exports.newOIDCToken = exports.newDeployKey = exports.createClient = exports.deployScript = void 0;
-const newDeployKey = (token) => ({ _internal: "deploy", token });
-exports.newDeployKey = newDeployKey;
-const newOIDCToken = (token) => ({ _internal: "oidc", token });
-exports.newOIDCToken = newOIDCToken;
-const newApiKey = (token) => ({ _internal: "api", token });
-exports.newApiKey = newApiKey;
-const createClient = (base, token) => { return ({ base, token }); };
-exports.createClient = createClient;
-const deployScript = (client) => (scriptId, code) => __awaiter(void 0, void 0, void 0, function* () {
-    const headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    };
-    switch (client.token._internal) {
-        case "deploy":
-            headers["DeploymentKey"] = client.token.token;
-            break;
-        case "oidc":
-            headers["GithubToken"] = client.token.token;
-            break;
-        case "api":
-            headers["AccessKey"] = client.token.token;
-            break;
-    }
-    const endpoint_save = `${client.base}/compute/script/${scriptId}/code`;
-    const response = yield fetch(endpoint_save, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ Code: code }),
+}
+function getAppConfiguration(token, appId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            fetch(`https://api-mc.opsbunny.net/v1/namespaces/default/applications/${appId}/configuration`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': token
+                },
+            })
+                .then(response => {
+                if (response.status === 400) {
+                    reject(`Could not obtain app configuration: Double-check your app_id.`);
+                    return;
+                }
+                if (response.status !== 200) {
+                    reject(`Could not obtain app configuration: HTTP status ${response.status}.`);
+                    return;
+                }
+                response.json()
+                    .then(obj => {
+                    resolve(obj);
+                })
+                    .catch(e => {
+                    console.log(e);
+                    reject('Could not parse JSON response.');
+                });
+            })
+                .catch(e => {
+                console.log(e);
+                reject('Could not obtain app configuration.');
+            });
+        });
     });
-    if (!response.ok) {
-        console.error(`Failed to update script: ${response.statusText}`);
-        console.error(yield response.text());
-        throw new Error("");
-    }
-    const endpoint_publish = `${client.base}/compute/script/${scriptId}/publish`;
-    const responsePublish = yield fetch(endpoint_publish, {
-        method: "POST",
-        headers,
+}
+function saveAppConfiguration(token, appId, appConfig) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            fetch('https://api-mc.opsbunny.net/v1/namespaces/default/applications', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify(appConfig),
+            })
+                .then(response => {
+                if (response.status !== 200) {
+                    reject(`Could not save app configuration: HTTP status ${response.status}.`);
+                    return;
+                }
+                resolve();
+            })
+                .catch(e => {
+                console.log(e);
+                reject('Could not save app configuration.');
+            });
+        });
     });
-    if (!responsePublish.ok) {
-        console.error(`Failed to publish script: ${response.statusText}`);
-        console.error(yield response.text());
-        throw new Error("");
-    }
-    console.log("Script updated and published successfully");
-});
-exports.deployScript = deployScript;
+}
 
 
 /***/ }),
@@ -25119,14 +25149,6 @@ module.exports = require("events");
 
 "use strict";
 module.exports = require("fs");
-
-/***/ }),
-
-/***/ 3292:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("fs/promises");
 
 /***/ }),
 
