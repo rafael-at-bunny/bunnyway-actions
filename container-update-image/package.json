@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "lint": "eslint src",
-    "test": "jest --silent --coverage",
+    "test": "jest --silent --coverage --passWithNoTests",
     "build": "ncc build src/main.ts -o .lib-action/"
   },
   "repository": {
